@@ -72,6 +72,33 @@ Q.push = function push(payload, cb) {
   }
 };
 
+Q.batchPush = function batchPush(payloads, cb) {
+  var q = this
+    , payloadKeys = Object.keys(payloads)
+    , batch = payloadKeys.map(function (plk) {
+        return { type: 'put', key: plk, value: stringify(payloads[plk]), prefix: q._work }
+      });
+  q._needsDrain = true;
+  q._db.batch(batch, put);
+
+  function put(err) {
+    if (err) {
+      if (cb) cb(err);
+      else q.emit('error', err);
+    } else if (cb) cb(null, payloadKeys);
+    maybeFlush(q);
+  }
+};
+
+/// accessor to db
+
+Q.workDb = function () {
+  return this._work;
+};
+
+Q.pendingDb = function () {
+  return this._pending;
+};
 
 /// start
 
